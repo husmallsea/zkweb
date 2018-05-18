@@ -8,7 +8,13 @@
     <artifactId>study-zkweb</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
-   
+    <modules>
+        <module>api</module>
+        <module>serviceImpl</module>
+        <module>common</module>
+        <module>web</module>
+    </modules>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework</groupId>
