@@ -1,0 +1,89 @@
+<html>
+<head>
+    <link href="../bootstrap/css/bootstrap.css" rel="stylesheet" type="text/css"/>
+    <link href="../bootstrap/css/mystyle.css" rel="stylesheet" type="text/css"/>
+    <link href="../bootstrap/css/bootstrap-treeview.min.css" rel="stylesheet" type="text/css"/>
+    <!--引入jquery脚本-->
+    <script src="../bootstrap/js/jquery.js" type="text/javascript"></script>
+    <!--引入bootstrap脚本-->
+    <script src="../bootstrap/js/bootstrap.js" type="text/javascript"></script>
+    <script src="../bootstrap/js/bootstrap-treeview.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="tree1"></div>
+</body>
+<script type="text/javascript">
+
+    function getTree() {
+        var data = [
+            {
+                text: "p1",
+                id: '0',
+                nodes: [
+                    { text: "p1-1", id: '1' },
+                    { text: "p1-2", id: '2' },
+                    { text: "p1-3", id: '3' },
+                    {
+                        text: "p1-4",
+                        id: '4',
+                        nodes: [
+                            {
+                                text: 'p1-1-1',
+                                id: '5'
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+        return data;
+    }
+
+    $("#tree1")
+        .treeview({
+            data: getTree(),
+            showIcon: false,
+            showCheckbox: true,
+            onhoverColor: "#E8E8E8",
+            showBorder: false,
+            showTags: true,
+            highlightSelected: true,
+            highlightSearchResults: false,
+            selectedBackColor: "#8D9CAA",
+            levels: 2,
+            onNodeSelected: function(event, data) {
+                alert(data.nodeId);
+                if (data.nodes === undefined || data.nodes === null) {
+                    return;
+                }
+                $("#tree1").treeview("deleteNode", [data.nodeId, { silent: true }]);
+                //nodeData是checkedNode或者selectedNode，选中或者checked这个节点， 该节点如果有父节点的话就会被删除。
+            },
+            onNodeExpanded:
+                function(event, data) {
+                    $.ajax({
+                        type: "Post",
+                        url: "/Bootstrap/GetExpandJson?id=" + data.id,
+                        dataType: "json",
+                        success: function (result) {
+                            for (var index = 0; index < result.length; index++) {
+                                var item = result[index];
+                                $("#tree1")
+                                    .treeview("addNode",
+                                        [
+                                            data.nodeId,
+                                            { node: { text: item.text, id: item.id }, silent: true }
+                                        ]);
+                            }
+                        }
+                    });
+                }
+        });
+
+
+</script>
+
+
+
+
+</html>

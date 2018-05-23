@@ -1,0 +1,283 @@
+<html>
+<head>
+    <link href="../bootstrap/css/bootstrap.css" rel="stylesheet" type="text/css"/>
+    <link href="../bootstrap/css/mystyle.css" rel="stylesheet" type="text/css"/>
+    <link href="../bootstrap/css/bootstrap-treeview.min.css" rel="stylesheet" type="text/css"/>
+    <!--引入jquery脚本-->
+    <script src="../bootstrap/js/jquery.js" type="text/javascript"></script>
+    <!--引入bootstrap脚本-->
+    <script src="../bootstrap/js/bootstrap.js" type="text/javascript"></script>
+    <script src="../bootstrap/js/bootstrap-treeview.js" type="text/javascript"></script>
+
+<script>
+    $(function(){
+        $.post("__URL__/aj_buildTreesForRole",{}, function(result){
+    var t='[{"text": "父节点 1","nId":4,"nodeId":4,"tags":["44"],"nodes": [{"text": "子节点 1","nId":3,"tags":["45"],"nodeId":"2","nodes": [{"text": "孙子节点 1","nId":2,"tags":["42"],"nodeId":"3"},{"text": "孙子节点 2","nId":1,"tags":["41"],"nodeId":"8"}]},{"text": "子节点 2","nId":1,"tags":["45"],"nodeId":"7"}  ]}]';
+            if(result.r){
+                t = result.list
+                var $checkableTree = $("#treeview-checkable").treeview({
+                    data:'[{"text": "父节点 1","nId":4,"nodeId":4,"tags":["44"],"nodes": [{"text": "子节点 1","nId":3,"tags":["45"],"nodeId":"2","nodes": [{"text": "孙子节点 1","nId":2,"tags":["42"],"nodeId":"3"},{"text": "孙子节点 2","nId":1,"tags":["41"],"nodeId":"8"}]},{"text": "子节点 2","nId":1,"tags":["45"],"nodeId":"7"}  ]}]',
+                    showTags:true,
+                    showCheckbox: true,   //是否显示复选框
+                    highlightSelected: true,    //是否高亮选中
+                    //nodeIcon: 'glyphicon glyphicon-user',    //节点上的图标
+                    //nodeIcon: 'glyphicon glyphicon-globe',
+                    emptyIcon: '',    //没有子节点的节点图标
+                    multiSelect: true,    //多选
+                    checkboxes: true,
+                    onNodeChecked: nodeChecked,
+                    onNodeUnchecked: nodeUnchecked,
+                    /*  onNodeExpanded:
+                        function(event, data) {
+                            if (data.nodes !== undefined && data.nodes !== null) {
+
+                        }
+               */
+
+                })
+                //展开所有才能进行下面默认的设置
+                $checkableTree.treeview('expandAll', [ { silent: true } ]);
+                //设置默认的选中
+                var checkids = seNodesSel('');
+                $checkableTree.treeview('toggleNodeChecked', [checkids, { silent: true } ]);
+                dochecklist()
+//获取选中的
+                // var c = $checkableTree.treeview('getChecked', [ { silent: true } ]);
+                //全部选中
+                //tree.treeview('checkAll', { silent: $('#chk-check-silent').is(':checked') });
+                //全部不选中
+                // tree.treeview('uncheckAll', { silent: $('#chk-check-silent').is(':checked') });
+                // $checkableTree.treeview('toggleNodeChecked', [ checkableNodes, { silent: $('#chk-check-silent').is(':checked') }]);
+                // console.log(c)
+
+
+                var findCheckableNodess = function() {
+                    return $checkableTree.treeview('search', [ $('#input-check-node').val(), { ignoreCase: false, exactMatch: false } ]);
+                };
+                var checkableNodes = findCheckableNodess();
+
+
+                // Check/uncheck/toggle nodes
+                $('#input-check-node').on('keyup', function (e) {
+                    checkableNodes = findCheckableNodess();
+                    $('.check-node').prop('disabled', !(checkableNodes.length >= 1));
+                });
+
+
+                $('#btn-check-node.check-node').on('click', function (e) {
+                    $checkableTree.treeview('checkNode', [ checkableNodes, { silent: $('#chk-check-silent').is(':checked') }]);
+                });
+
+
+                $('#btn-uncheck-node.check-node').on('click', function (e) {
+                    $checkableTree.treeview('uncheckNode', [ checkableNodes, { silent: $('#chk-check-silent').is(':checked') }]);
+                });
+
+
+                $('#btn-toggle-checked.check-node').on('click', function (e) {
+                    $checkableTree.treeview('toggleNodeChecked', [ checkableNodes, { silent: $('#chk-check-silent').is(':checked') }]);
+                });
+
+
+                // Check/uncheck all
+                $('#btn-check-all').on('click', function (e) {
+                    $checkableTree.treeview('checkAll', { silent: $('#chk-check-silent').is(':checked') });
+                });
+
+
+                $('#btn-uncheck-all').on('click', function (e) {
+                    $checkableTree.treeview('uncheckAll', { silent: $('#chk-check-silent').is(':checked') });
+                });
+            }else{
+                layer.alert(result.info, {
+                    skin: 'layui-layer-molv' //样式类名
+                    ,closeBtn: 0
+                });
+            }
+
+
+        },'json');
+
+    });
+    var nodeCheckedSilent = false;
+    function nodeChecked (event, node){
+        dochecklist();
+        if(nodeCheckedSilent){
+            return;
+        }
+        nodeCheckedSilent = true;
+        checkAllParent(node);
+        checkAllSon(node);
+        nodeCheckedSilent = false;
+    }
+    var nodeUncheckedSilent = false;
+    function nodeUnchecked  (event, node){
+        dochecklist();
+        if(nodeUncheckedSilent)
+            return;
+        nodeUncheckedSilent = true;
+        uncheckAllParent(node);
+        uncheckAllSon(node);
+        nodeUncheckedSilent = false;
+    }
+
+    //选中全部父节点
+    function checkAllParent(node){
+        $('#treeview-checkable').treeview('checkNode',node.nodeId,{silent:true});
+        var parentNode = $('#treeview-checkable').treeview('getParent',node.nodeId);
+        if(!("nodeId" in parentNode)){
+            return;
+        }else{
+            checkAllParent(parentNode);
+        }
+    }
+    //取消全部父节点
+    function uncheckAllParent(node){
+        $('#treeview-checkable').treeview('uncheckNode',node.nodeId,{silent:true});
+        var siblings = $('#treeview-checkable').treeview('getSiblings', node.nodeId);
+        var parentNode = $('#treeview-checkable').treeview('getParent',node.nodeId);
+        if(!("nodeId" in parentNode)) {
+            return;
+        }
+        var isAllUnchecked = true;  //是否全部没选中
+        for(var i in siblings){
+            if(siblings[i].state.checked){
+                isAllUnchecked=false;
+                break;
+            }
+        }
+        if(isAllUnchecked){
+            uncheckAllParent(parentNode);
+        }
+
+    }
+    //级联选中所有子节点
+    function checkAllSon(node){
+        $('#treeview-checkable').treeview('checkNode',node.nodeId,{silent:true});
+        if(node.nodes!=null&&node.nodes.length>0){
+            for(var i in node.nodes){
+                checkAllSon(node.nodes[i]);
+            }
+        }
+    }
+    //级联取消所有子节点
+    function uncheckAllSon(node){
+        $('#treeview-checkable').treeview('uncheckNode',node.nodeId,{silent:true});
+        if(node.nodes!=null&&node.nodes.length>0){
+            for(var i in node.nodes){
+                uncheckAllSon(node.nodes[i]);
+            }
+        }
+    }
+    //处理选中记录
+    function dochecklist()
+    {
+        var content ='';
+        var ids ='';
+        var list = $('#treeview-checkable').treeview('getChecked', [ { silent: true } ]);
+        if(list){
+            $.each(list,function(name,value){
+                content += '<p><i class="fa fa-check-circle" aria-hidden="true"></i>'+ value.tags+ '->' + value.text + '</p>';
+                if(ids==''){
+                    ids = value.id;
+                }
+                else{
+                    ids +=',' + value.id;
+                }
+            })
+        }
+        $('#ids').val(ids);
+        $('#checkable-output').html(content);
+    }
+    //在id="ids"的input获取data-nodeid
+    function seNodesSel(sids){
+        var idsipt = $('#ids').val();
+        if(sids!=''){
+            idsipt = sids;
+        }
+        var retids =[];
+        if(idsipt!=''){
+            arr = idsipt.toString().split(',');
+            for(var i in arr){
+                var tmp = $("li[data-id="+arr[i]+"]").attr("data-nodeid");
+                if(tmp!=null&&tmp!=undefined&&tmp!="")
+                {
+                    if(retids==''){
+                        retids[0] = parseInt(tmp);
+                    }else{
+                        retids.push(parseInt(tmp));
+                    }
+                }
+            }
+        }
+        return retids;
+    }
+</script>
+</head>
+<body>
+<div class="row wrapper wrapper-content animated fadeInRight">
+    <div class="col-sm-5">
+        <div class="ibox float-e-margins">
+            <div class="ibox-title">
+                <h5>{$routetitle}</h5>
+                <div class="ibox-tools">
+                </div>
+
+            </div>
+            <div class="ibox-content">
+                <div class="form-group row">
+                    <div class="col-sm-6">
+                        <input type="input" class="form-control" id="input-check-node" placeholder="搜索节点" value="">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <button type="button" class="btn btn-success check-node" id="btn-check-node">选中</button>
+                    </div>
+                    <div class="col-sm-3">
+                        <button type="button" class="btn btn-danger check-node" id="btn-uncheck-node">取消</button>
+                    </div>
+                    <div class="col-sm-3">
+                        <button type="button" class="btn btn-primary check-node" id="btn-toggle-checked">切换</button>
+                    </div>
+                </div>
+                <div id="treeview-checkable" class="test"></div>
+                <div class="form-group row">
+                    <!-- <div class="checkbox">
+           <label>
+             <input type="checkbox" class="checkbox" id="chk-check-silent" value="false">
+             Silent (No events)
+           </label>
+       </div> -->
+                    <div class="col-sm-6">
+                        <button type="button" class="btn btn-success" id="btn-check-all">全选</button>
+                    </div>
+                    <div class="col-sm-6">
+                        <button type="button" class="btn btn-danger" id="btn-uncheck-all">全不选</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-5">
+        <div class="ibox float-e-margins">
+            <div class="ibox-content">
+                <h2>选中记录</h2>
+                <div id="checkable-output"></div>
+            </div>
+        </div>
+    </div>
+    <form method="post" action="{:url('node/nodeselect')}" class="form-horizontal">
+        {include file="common/editform" /}
+        <input type="hidden" id='ids' name='ids' value= "{$ids}" class="form-control">
+        <div class="form-group">
+            <div class="col-sm-4 col-sm-offset-2">
+                <button class="btn btn-primary" type="submit">保存</button>
+                <button class="btn btn-white" onclick="javascript:history.back(-1);" type="button">取消</button>
+            </div>
+        </div>
+    </form>
+
+</div>
+</body>
